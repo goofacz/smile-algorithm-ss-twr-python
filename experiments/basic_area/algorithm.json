@@ -1,0 +1,6 @@
+{
+  "import": [
+    "resource:simulations/basic_area/analyze_configuration.json",
+    "resource:algorithms/tof/simple_ls.json"
+  ]
+}
