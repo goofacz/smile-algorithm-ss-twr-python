@@ -21,7 +21,6 @@ import scipy.constants as scc
 
 import smile.area as sarea
 import smile.algorithm as salgorithm
-from smile.filter import Filter
 from smile.frames import Frames
 from smile.nodes import Nodes
 from smile.results import Results, Result
@@ -44,30 +43,26 @@ class Algorithm(salgorithm.Algorithm):
         self.c *= 1e-12  # m/s -> m/ps
 
     def run_offline(self, directory_path):
-        anchors = Anchors.load_csv(os.path.join(directory_path, 'ss_twr_anchors.csv'))
-        mobiles = Nodes.load_csv(os.path.join(directory_path, 'ss_twr_mobiles.csv'))
-        mobile_frames = Frames.load_csv(os.path.join(directory_path, 'ss_twr_mobile_frames.csv'))
+        anchors = Anchors(os.path.join(directory_path, 'ss_twr_anchors.csv'))
+        mobiles = Nodes(os.path.join(directory_path, 'ss_twr_mobiles.csv'))
+        mobile_frames = Frames(os.path.join(directory_path, 'ss_twr_mobile_frames.csv'))
 
         results = []
         for mobile_node in mobiles:
             mobile_results = self._localize_mobile(mobile_node, anchors, mobile_frames)
             results.extend(mobile_results)
 
-        results = Results.create_array(results)
+        results = Results(results)
         return results, anchors
 
     def _localize_mobile(self, mobile_node, anchors, mobile_frames):
         # Construct POLL frames filter, i.e. transmitted frames ('TX' directions) sent by mobile node
-        poll_frames = Filter(mobile_frames). \
-            equal("source_mac_address", mobile_node["mac_address"]). \
-            equal("direction", hash('TX')). \
-            finish()
+        condition = (mobile_frames.source_mac_address == mobile_node["mac_address"]) & (mobile_frames.direction == hash('TX'))
+        poll_frames = mobile_frames[condition, :]
 
         # Construct REPONSE frames filter, i.e. transmitted frames ('RX' directions) sent to mobile node
-        response_frames = Filter(mobile_frames). \
-            equal("destination_mac_address", mobile_node["mac_address"]). \
-            equal("direction", hash('RX')). \
-            finish()
+        condition = (mobile_frames.destination_mac_address == mobile_node["mac_address"]) & (mobile_frames.direction == hash('RX'))
+        response_frames = mobile_frames[condition, :]
 
         assert (np.unique(anchors["message_processing_time"]).shape == (1,))
         processing_delay = anchors[0, "message_processing_time"]
@@ -82,12 +77,8 @@ class Algorithm(salgorithm.Algorithm):
         for round_i in range(len(sequence_numbers_triples)):
             sequence_numbers = sequence_numbers_triples[round_i]
 
-            round_poll_frames = Filter(poll_frames). \
-                is_in("sequence_number", sequence_numbers). \
-                finish()
-            round_response_frames = Filter(response_frames). \
-                is_in("sequence_number", sequence_numbers). \
-                finish()
+            round_poll_frames = poll_frames[np.isin(poll_frames.sequence_number, sequence_numbers), :]
+            round_response_frames = response_frames[np.isin(response_frames.sequence_number, sequence_numbers), :]
 
             tof = round_response_frames["begin_clock_timestamp"] - round_poll_frames["begin_clock_timestamp"]
             tof -= processing_delay
