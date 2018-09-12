@@ -64,7 +64,8 @@ class Algorithm(salgorithm.Algorithm):
         condition = (mobile_frames.destination_mac_address == mobile_node["mac_address"]) & (mobile_frames.direction == hash('RX'))
         response_frames = mobile_frames[condition, :]
 
-        assert (np.unique(anchors["message_processing_time"]).shape == (1,))
+        assert (np.unique(anchors.message_processing_time).shape == (1,))
+        #x = anchors[:, ("mac_address", "message_processing_time")]
         processing_delay = anchors[0, "message_processing_time"]
 
         # FIXME
@@ -80,7 +81,7 @@ class Algorithm(salgorithm.Algorithm):
             round_poll_frames = poll_frames[np.isin(poll_frames.sequence_number, sequence_numbers), :]
             round_response_frames = response_frames[np.isin(response_frames.sequence_number, sequence_numbers), :]
 
-            tof = round_response_frames["begin_clock_timestamp"] - round_poll_frames["begin_clock_timestamp"]
+            tof = round_response_frames.begin_clock_timestamp - round_poll_frames.begin_clock_timestamp
             tof -= processing_delay
             tof /= 2
 

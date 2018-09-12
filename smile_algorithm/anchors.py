@@ -13,16 +13,18 @@
 # along with this program.  If not, see http:#www.gnu.org/licenses/.
 #
 
-import numpy as np
-
-from smile.nodes import Nodes
+import smile.nodes as snodes
 
 
-class Anchors(Nodes):
-    def __init__(self, *args):
-        super(Anchors, self).__init__()
-        self.column_names["message_processing_time"] = 4
+def _get_base_column_names():
+    column_names = snodes._get_base_column_names()
+    column_names["message_processing_time"] = 4
 
-    @staticmethod
-    def load_csv(file_path):
-        return Anchors(np.loadtxt(file_path, delimiter=',', ndmin=2))
+    return column_names
+
+
+class Anchors(snodes.Nodes):
+    _column_names = _get_base_column_names()
+
+    def __new__(cls, input_array):
+        return super(Anchors, cls).__new__(cls, input_array, Anchors._column_names)
