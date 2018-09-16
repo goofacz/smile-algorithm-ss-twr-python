@@ -21,9 +21,10 @@ import scipy.constants as scc
 
 import smile.area as sarea
 import smile.algorithm as salgorithm
+import smile.results as sresults
 from smile.frames import Frames
 from smile.nodes import Nodes
-from smile.results import Results, Result
+from smile.result import Result
 from smile_algorithm.anchors import Anchors
 
 
@@ -52,7 +53,7 @@ class Algorithm(salgorithm.Algorithm):
             mobile_results = self._localize_mobile(mobile_node, anchors, mobile_frames)
             results.extend(mobile_results)
 
-        results = Results(results)
+        results = sresults.create_results(results)
         return results, anchors
 
     @staticmethod
@@ -102,6 +103,9 @@ class Algorithm(salgorithm.Algorithm):
             result.end_true_position_x = round_response_frames[2, "end_true_position_x"]
             result.end_true_position_y = round_response_frames[2, "end_true_position_y"]
             result.end_true_position_z = 0
+            result.reference_position_x = result.end_true_position_x
+            result.reference_position_y = result.end_true_position_y
+            result.reference_position_z = 0
             results.append(result)
 
         return results
